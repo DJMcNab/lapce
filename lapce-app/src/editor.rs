@@ -62,6 +62,16 @@ impl EditorData {
         }
     }
 
+    pub fn cursor_position(&self) -> (usize, floem::peniko::kurbo::Point) {
+        let cursor = self.cursor.with(|it| dbg!(it.offset()));
+        let config = self.config.get();
+        self.doc.with(|editor| {
+            let config: &LapceConfig = &config;
+            let (line, col) = editor.buffer().offset_to_line_col(cursor);
+            (line, editor.line_point_of_line_col(line, col, 12, config))
+        })
+    }
+
     fn run_edit_command(&self, cmd: &EditCommand) -> CommandExecuted {
         let modal = self.config.with(|config| config.core.modal)
             && !self.doc.with(|doc| doc.content.is_local());
@@ -122,7 +132,10 @@ impl KeyPressFocus for EditorData {
         &self,
         condition: crate::keypress::condition::Condition,
     ) -> bool {
-        todo!()
+        matches!(
+            condition,
+            crate::keypress::condition::Condition::EditorFocus
+        )
     }
 
     fn run_command(

@@ -49,10 +49,30 @@ use crate::{
 fn editor(cx: AppContext, editor: ReadSignal<EditorData>) -> impl View {
     let doc = move || editor.with(|editor| editor.doc).get();
     let key_fn = |(line, content): &(usize, String)| format!("{line}{content}");
-    let view_fn = |cx, (line, line_content): (usize, String)| {
-        label(cx, move || line_content.clone()).style(cx, || Style {
-            height: Dimension::Points(20.0),
-            ..Default::default()
+    let view_fn = move |cx, (line, line_content): (usize, String)| {
+        stack(cx, |cx| {
+            (
+                label(cx, move || line_content.clone()).style(cx, || Style {
+                    height: Dimension::Points(20.0),
+                    ..Default::default()
+                }),
+                label(cx, move || "".to_string()).style(cx, move || {
+                    let (cursor_line, point) =
+                        editor.with(|editor| editor.cursor_position());
+                    if line == cursor_line {
+                        return Style {
+                            position: Position::Absolute,
+                            border_left: 2.0,
+                            margin_left: point.x as f32 - 1.0,
+                            ..Default::default()
+                        };
+                    }
+                    Style {
+                        display: Display::None,
+                        ..Default::default()
+                    }
+                }),
+            )
         })
     };
     scroll(cx, |cx| {
@@ -570,7 +590,9 @@ fn app_logic(cx: AppContext) -> impl View {
 
     let workspace = Arc::new(LapceWorkspace {
         kind: LapceWorkspaceType::Local,
-        path: Some(PathBuf::from("/Users/dz/lapce-rust")),
+        path: Some(PathBuf::from(
+            "/home/djmcnab/Documents/repositories/linebender/lapce/lapce",
+        )),
         last_open: 0,
     });
 
